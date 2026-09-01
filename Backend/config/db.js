@@ -4,22 +4,22 @@ import env from './env.js';
 const { Pool } = pg;
 
 export const pool = new Pool({
-    connectionString: env.DATABASE_URL,
-    ssl: env.DATABASE_URL && (env.DATABASE_URL.includes('localhost') || env.DATABASE_URL.includes('127.0.0.1'))
-        ? false
-        : (env.DATABASE_URL ? { rejectUnauthorized: false } : false)
+  connectionString: env.DATABASE_URL,
+  ssl: env.DATABASE_URL && (env.DATABASE_URL.includes('localhost') || env.DATABASE_URL.includes('127.0.0.1'))
+    ? false
+    : (env.DATABASE_URL ? { rejectUnauthorized: false } : false)
 });
 
 export async function query(text, params) {
-    return pool.query(text, params);
+  return pool.query(text, params);
 }
 
 pool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
+  console.error('Unexpected error on idle client', err);
 });
 
 async function migrate() {
-    await query(`
+  await query(`
     CREATE TABLE IF NOT EXISTS users (
       id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       email         varchar(255)               UNIQUE NOT NULL,
@@ -31,9 +31,9 @@ async function migrate() {
     );
   `);
 
-    await query(`
+  await query(`
     CREATE TABLE IF NOT EXISTS forms (
-      id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      id              uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
       owner           uuid                NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       title           varchar(255)        NOT NULL,
       description     text                NOT NULL DEFAULT '',
@@ -52,29 +52,29 @@ async function migrate() {
     );
   `);
 
-    await query(`
+  await query(`
     CREATE TABLE IF NOT EXISTS responses (
-      id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      form            uuid NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
-      answers jsonb           NOT NULL DEFAULT '[]'::jsonb,
-      completion_time integer NOT NULL DEFAULT 0,
-      meta jsonb          NOT NULL DEFAULT '{}'::jsonb,
-      submitted_at timestamptz NOT NULL DEFAULT now()
+      id              uuid        PRIMARY KEY     DEFAULT gen_random_uuid(),
+      form            uuid        NOT NULL        REFERENCES forms(id) ON DELETE CASCADE,
+      answers         jsonb       NOT NULL        DEFAULT '[]'::jsonb,
+      completion_time integer     NOT NULL        DEFAULT 0,
+      meta            jsonb       NOT NULL        DEFAULT '{}'::jsonb,
+      submitted_at    timestamptz NOT NULL        DEFAULT now()
     );
   `);
 
-    await query('CREATE INDEX IF NOT EXISTS idx_forms_owner ON forms(owner, is_archived, updated_at DESC);');
-    await query('CREATE INDEX IF NOT EXISTS idx_responses_form ON responses(form, submitted_at DESC);');
+  await query('CREATE INDEX IF NOT EXISTS idx_forms_owner ON forms(owner, is_archived, updated_at DESC);');
+  await query('CREATE INDEX IF NOT EXISTS idx_responses_form ON responses(form, submitted_at DESC);');
 }
 
 export async function connectDB() {
-    try {
-        const { rows } = await query("SELECT current_database() AS db");
-        console.log(`Postgres connected: ${rows[0].db}`);
-        await migrate();
-        console.log("Schema ready");
-    } catch (error) {
-        console.error("Postgres connection error:", error.message);
-        process.exit(1);
-    }
+  try {
+    const { rows } = await query("SELECT current_database() AS db");
+    console.log(`Postgres connected: ${rows[0].db}`);
+    await migrate();
+    console.log("Schema ready");
+  } catch (error) {
+    console.error("Postgres connection error:", error.message);
+    process.exit(1);
+  }
 }
