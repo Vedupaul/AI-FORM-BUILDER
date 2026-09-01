@@ -1,0 +1,9 @@
+{
+  "name": "ai-form-builder-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix Frontend",
+    "build": "npm run build --prefix Frontend",
+    "preview": "npm run preview --prefix Frontend"
+  }
+}
