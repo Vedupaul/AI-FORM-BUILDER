@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
 import formRoutes from "./routes/form.routes.js";
+import responseRoutes from "./routes/response.routes.js";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/forms", formRoutes);
+app.use("/api", responseRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
