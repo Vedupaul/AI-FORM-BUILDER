@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import { env } from "./config/env.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
-
 import authRoutes from "./routes/auth.routes.js";
+import formRoutes from "./routes/form.routes.js";
 
 const app = express();
 
@@ -25,6 +25,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/forms", formRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
