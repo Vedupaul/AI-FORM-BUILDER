@@ -46,54 +46,54 @@ export function FormView({ form, preview = false, onSubmit, submitting = false }
   };
 
   const formBody = (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-xl px-6 py-12 sm:px-10 lg:px-12">
-          {form.settings?.logo ? (
-            <img src={form.settings.logo} alt="" className="mb-8 h-9 w-auto object-contain" />
-          ) : (
-            <div className="mb-8 h-1 w-10 rounded-full" style={{ background: accent }} />
-          )}
+    <form onSubmit={handleSubmit} className="w-full">
+      {form.settings?.logo ? (
+        <img src={form.settings.logo} alt="" className="mb-8 h-9 w-auto object-contain" />
+      ) : (
+        <div className="mb-8 h-1 w-10 rounded-full" style={{ background: accent }} />
+      )}
 
-          <header className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{form.title}</h1>
-            {form.description && (
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">{form.description}</p>
-            )}
-          </header>
+      <header className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{form.title}</h1>
+        {form.description && (
+          <p className="mt-2 text-sm leading-relaxed text-slate-500 sm:text-base">{form.description}</p>
+        )}
+      </header>
 
-          <div className="space-y-6 text-slate-900">
-            {form.questions.map((q) => (
-              <div key={q.id} id={`q-${q.id}`}>
-                <FieldRenderer
-                  field={q}
-                  value={answers[q.id]}
-                  onChange={(val) => setAnswer(q.id, val)}
-                  error={errors[q.id]}
-                  accent={accent}
-                />
-              </div>
-            ))}
+      <div className="space-y-6 text-slate-900">
+        {form.questions.map((q) => (
+          <div key={q.id} id={`q-${q.id}`}>
+            <FieldRenderer
+              field={q}
+              value={answers[q.id]}
+              onChange={(val) => setAnswer(q.id, val)}
+              error={errors[q.id]}
+              accent={accent}
+            />
           </div>
+        ))}
+      </div>
 
-          {answerable.length > 0 && (
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-9 w-full rounded-xl py-3 text-sm font-semibold text-white transition-all hover:brightness-[1.07] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60"
-              style={{
-                background: `linear-gradient(145deg, ${accent}, ${shade(accent, -16)})`,
-                boxShadow: `0 8px 22px -8px ${accent}80`,
-              }}
-            >
-              {submitting ? "Submitting…" : form.settings?.submitButtonText || "Submit"}
-            </button>
-          )}
+      {answerable.length > 0 && (
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-9 w-full rounded-xl py-3 text-sm font-semibold text-white transition-all hover:brightness-[1.07] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60"
+          style={{
+            background: `linear-gradient(145deg, ${accent}, ${shade(accent, -16)})`,
+            boxShadow: `0 8px 22px -8px ${accent}80`,
+          }}
+        >
+          {submitting ? "Submitting…" : form.settings?.submitButtonText || "Submit"}
+        </button>
+      )}
 
-          {preview && (
-            <p className="mt-3 text-center text-xs text-slate-400">Preview mode — submissions are disabled</p>
-          )}
+      {preview && (
+        <p className="mt-3 text-center text-xs text-slate-400">Preview mode — submissions are disabled</p>
+      )}
 
-          <p className="mt-10 text-center text-xs text-slate-400">Powered by Timely Forms AI</p>
-        </form>
+      <p className="mt-10 text-center text-xs text-slate-400">Powered by Timely Forms AI</p>
+    </form>
   );
 
   const progressBar = form.settings?.showProgressBar && answerable.length > 0 && (
@@ -102,24 +102,25 @@ export function FormView({ form, preview = false, onSubmit, submitting = false }
     </div>
   );
 
-  // Preview (builder modal): form-only; the modal owns the scroll.
+  // Preview mode (inside modal)
   if (preview) {
     return (
-      <div className="bg-white">
+      <div className="bg-white text-slate-900">
         {progressBar}
-        {formBody}
+        <div className="mx-auto w-full max-w-xl px-6 py-8 sm:px-10">
+          {formBody}
+        </div>
       </div>
     );
   }
 
-  // Public page: split layout with the illustration on the right.
+  // Public form page: clean centered carbon copy of preview
   return (
-    <div className="grid h-screen grid-cols-1 lg:grid-cols-[1fr_minmax(0,42%)] xl:grid-cols-[1fr_minmax(0,46%)]">
-      <div className="relative flex h-screen flex-col bg-white">
-        {progressBar}
-        <div className="flex-1 overflow-y-auto scrollbar-thin">{formBody}</div>
+    <div className="min-h-screen w-full bg-white text-slate-900">
+      {progressBar}
+      <div className="mx-auto w-full max-w-xl px-6 py-12 sm:px-10">
+        {formBody}
       </div>
-      <FormArtPanel accent={accent} variant={theme.art} className="hidden lg:block" />
     </div>
   );
 }

@@ -62,7 +62,7 @@ export default function PublicForm() {
   if (status === "done") return <SuccessScreen form={form} />;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <FormView form={form} onSubmit={handleSubmit} submitting={submitting} />
     </div>
   );
