@@ -10,15 +10,15 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 // Heavier routes (builder, charts, public renderer) are code-split.
-const Templates = lazy(() => import("./pages/Templates.jsx"));
-const Builder = lazy(() => import("./pages/Builder.jsx"));
-const Responses = lazy(() => import("./pages/Responses.jsx"));
-const Analytics = lazy(() => import("./pages/Analytics.jsx"));
-const PublicForm = lazy(() => import("./pages/PublicForm.jsx"));
-const Insights = lazy(() => import("./pages/Insights.jsx"));
-const Inbox = lazy(() => import("./pages/Inbox.jsx"));
-const Settings = lazy(() => import("./pages/Settings.jsx"));
-const MyForms = lazy(() => import("./pages/MyForms.jsx"));
+const Templates = lazy(() => import("./pages/Templates"));
+const Builder = lazy(() => import("./pages/Builder"));
+const Responses = lazy(() => import("./pages/Responses"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const PublicForm = lazy(() => import("./pages/PublicForm"));
+const Insights = lazy(() => import("./pages/Insights"));
+const Inbox = lazy(() => import("./pages/Inbox"));
+const Settings = lazy(() => import("./pages/Settings"));
+const MyForms = lazy(() => import("./pages/MyForms"));
 
 function Lazy({ children }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;

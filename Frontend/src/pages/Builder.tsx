@@ -256,7 +256,7 @@ export default function Builder() {
   const published = form.status === "published";
 
   return (
-    <div className="flex h-screen flex-col bg-app">
+    <div className="fixed inset-0 z-0 flex flex-col bg-app overflow-hidden">
       {/* Top bar */}
       <header className="flex h-16 shrink-0 items-center gap-3 border-b border-default bg-surface px-3 lg:px-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back">
@@ -320,7 +320,7 @@ export default function Builder() {
 
           {/* Center: canvas */}
           <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin">
-            <div className="mx-auto max-w-2xl px-4 py-8">
+            <div className="mx-auto max-w-2xl px-4 pt-8 pb-32">
               {/* Mobile tab switch */}
               <div className="mb-4 flex gap-1 rounded-xl bg-surface-2 p-1 lg:hidden">
                 <TabButton active={tab === "build"} onClick={() => setTab("build")} icon={Layers}>Build</TabButton>

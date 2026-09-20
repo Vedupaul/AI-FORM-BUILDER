@@ -262,6 +262,8 @@ function makeResponse(form, dayOffset) {
   };
 }
 
+const STORAGE_KEY = "timely_forms_mock_store_v1";
+
 const store = {
   user: {
     id: "u_demo",
@@ -274,7 +276,40 @@ const store = {
   responses: [],
 };
 
+function saveStore() {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    }
+  } catch (err) {
+    console.warn("Failed to persist mock data to localStorage", err);
+  }
+}
+
+function syncStore() {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.forms) && parsed.user) {
+          store.user = parsed.user;
+          store.forms = parsed.forms;
+          store.responses = parsed.responses || [];
+          return true;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to read mock data from localStorage", err);
+  }
+  return false;
+}
+
 (function build() {
+  if (syncStore()) {
+    return;
+  }
   for (const def of FORM_DEFS) {
     const form = makeForm(def);
     const n = def.responses || 0;
@@ -286,12 +321,17 @@ const store = {
     form.views = n ? Math.round(n / (def.conversion || 0.5)) + rand(0, 25) : rand(0, 12);
     store.forms.push(form);
   }
+  saveStore();
 })();
 
-const responsesFor = (formId) => store.responses.filter((r) => r.form === formId);
+const responsesFor = (formId) => {
+  syncStore();
+  return store.responses.filter((r) => r.form === formId);
+};
 
 // ---------- analytics (mirrors backend analytics.service) ----------
 function computeAnalytics(formId) {
+  syncStore();
   const form = store.forms.find((f) => f._id === formId);
   const responses = responsesFor(formId).sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
   const totalResponses = responses.length;
@@ -345,6 +385,7 @@ function computeAnalytics(formId) {
 
 // ---------- insights (mirrors backend insights.service) ----------
 function computeInsights() {
+  syncStore();
   const forms = store.forms.filter((f) => !f.isArchived);
   const totalViews = forms.reduce((s, f) => s + (f.views || 0), 0);
   const totalResponses = forms.reduce((s, f) => s + (f.responseCount || 0), 0);
@@ -399,6 +440,7 @@ function computeInsights() {
 }
 
 function computeInbox(search = "") {
+  syncStore();
   const formMap = new Map(store.forms.map((f) => [f._id, f]));
   let responses = [...store.responses].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)).slice(0, 300);
   if (search.trim()) {
@@ -436,24 +478,38 @@ function toCsv(form, responses) {
 // ============================================================================
 export const mock = {
   // ----- auth -----
-  currentUser: () => clone(store.user),
-  login: () => ({ user: clone(store.user), token: `mock.${uid("tok")}` }),
-  register: (payload) => {
-    if (payload?.name) store.user.name = payload.name;
-    if (payload?.email) store.user.email = payload.email;
+  currentUser: () => {
+    syncStore();
+    return clone(store.user);
+  },
+  login: () => {
+    syncStore();
     return { user: clone(store.user), token: `mock.${uid("tok")}` };
   },
-  me: () => ({ user: clone(store.user) }),
+  register: (payload) => {
+    syncStore();
+    if (payload?.name) store.user.name = payload.name;
+    if (payload?.email) store.user.email = payload.email;
+    saveStore();
+    return { user: clone(store.user), token: `mock.${uid("tok")}` };
+  },
+  me: () => {
+    syncStore();
+    return { user: clone(store.user) };
+  },
   updateProfile: (patch) => {
+    syncStore();
     Object.assign(store.user, {
       name: patch.name ?? store.user.name,
       avatarColor: patch.avatarColor ?? store.user.avatarColor,
     });
+    saveStore();
     return clone(store.user);
   },
 
   // ----- forms -----
   listForms: ({ search = "", filter = "all" } = {}) => {
+    syncStore();
     let forms = store.forms.filter((f) => (filter === "archived" ? f.isArchived : !f.isArchived));
     if (filter === "favorites") forms = forms.filter((f) => f.isFavorite);
     if (filter === "published") forms = forms.filter((f) => f.status === "published");
@@ -462,22 +518,27 @@ export const mock = {
     return clone(forms.sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || new Date(b.updatedAt) - new Date(a.updatedAt)));
   },
   getForm: (id) => {
+    syncStore();
     let form = store.forms.find((f) => f._id === id);
     if (!form) {
       // synthesize a sensible blank form for unknown ids
       form = makeForm({ title: "Untitled form", description: "", theme: "modern", color: "#0c8b7c", status: "draft", questions: [] });
       form._id = id;
       store.forms.unshift(form);
+      saveStore();
     }
     return clone(form);
   },
   getPublicForm: (slug) => {
-    const form = store.forms.find((f) => f.slug === slug && f.status === "published");
+    syncStore();
+    const form = store.forms.find((f) => (f.slug === slug || f._id === slug) && f.status === "published");
     if (!form) throw Object.assign(new Error("This form is not available"), { message: "This form is not available" });
     form.views += 1;
+    saveStore();
     return clone(form);
   },
   createForm: (payload = {}) => {
+    syncStore();
     const form = makeForm({
       title: payload.title || "Untitled form",
       description: payload.description || "",
@@ -493,9 +554,11 @@ export const mock = {
     form.createdAt = new Date().toISOString();
     form.updatedAt = form.createdAt;
     store.forms.unshift(form);
+    saveStore();
     return clone(form);
   },
   updateForm: (id, updates) => {
+    syncStore();
     let form = store.forms.find((f) => f._id === id);
     if (!form) {
       mock.getForm(id); // synthesize + insert for unknown ids
@@ -504,16 +567,23 @@ export const mock = {
     const allowed = ["title", "description", "theme", "questions", "settings", "isFavorite", "isArchived"];
     for (const key of allowed) if (key in updates) form[key] = updates[key];
     form.updatedAt = new Date().toISOString();
+    saveStore();
     return clone(form);
   },
   publishForm: (id, publish) => {
-    const form = store.forms.find((f) => f._id === id);
-    form.status = publish ? "published" : "draft";
-    form.publishedAt = publish ? new Date().toISOString() : null;
-    form.updatedAt = new Date().toISOString();
-    return clone(form);
+    syncStore();
+    const form = store.forms.find((f) => f._id === id || f.slug === id);
+    if (form) {
+      form.status = publish ? "published" : "draft";
+      form.publishedAt = publish ? new Date().toISOString() : null;
+      form.updatedAt = new Date().toISOString();
+      saveStore();
+      return clone(form);
+    }
+    return null;
   },
   duplicateForm: (id) => {
+    syncStore();
     const src = store.forms.find((f) => f._id === id);
     const copy = clone(src);
     copy._id = uid("form");
@@ -527,17 +597,21 @@ export const mock = {
     copy.createdAt = new Date().toISOString();
     copy.updatedAt = copy.createdAt;
     store.forms.unshift(copy);
+    saveStore();
     return clone(copy);
   },
   removeForm: (id) => {
+    syncStore();
     store.forms = store.forms.filter((f) => f._id !== id);
     store.responses = store.responses.filter((r) => r.form !== id);
+    saveStore();
     return { success: true, message: "Form deleted" };
   },
 
   // ----- responses & analytics -----
   submitResponse: (slug, payload) => {
-    const form = store.forms.find((f) => f.slug === slug);
+    syncStore();
+    const form = store.forms.find((f) => f.slug === slug || f._id === slug);
     if (form) {
       store.responses.push({
         _id: uid("resp"),
@@ -551,10 +625,12 @@ export const mock = {
         submittedAt: new Date().toISOString(),
       });
       form.responseCount += 1;
+      saveStore();
     }
     return { id: uid("resp") };
   },
   listResponses: (formId, { search = "" } = {}) => {
+    syncStore();
     let responses = responsesFor(formId).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
     if (search.trim()) {
       const needle = search.trim().toLowerCase();
@@ -565,24 +641,34 @@ export const mock = {
     }
     return { responses: clone(responses), count: responses.length };
   },
-  analytics: (formId) => clone(computeAnalytics(formId)),
+  analytics: (formId) => {
+    syncStore();
+    return clone(computeAnalytics(formId));
+  },
   removeResponse: (id) => {
+    syncStore();
     const r = store.responses.find((x) => x._id === id);
     if (r) {
       const form = store.forms.find((f) => f._id === r.form);
       if (form) form.responseCount = Math.max(0, form.responseCount - 1);
     }
     store.responses = store.responses.filter((x) => x._id !== id);
+    saveStore();
     return { success: true, message: "Response deleted" };
   },
   exportCsv: (formId) => {
+    syncStore();
     const form = store.forms.find((f) => f._id === formId);
     return toCsv(form, responsesFor(formId).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)));
   },
 
   // ----- workspace-wide -----
-  insights: () => clone(computeInsights()),
+  insights: () => {
+    syncStore();
+    return clone(computeInsights());
+  },
   inbox: ({ search = "" } = {}) => {
+    syncStore();
     const responses = computeInbox(search);
     return { responses: clone(responses), count: responses.length };
   },
