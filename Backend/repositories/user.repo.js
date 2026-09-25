@@ -3,9 +3,10 @@ import { query } from "../config/db.js";
 function mapUser(row) {
     if (!row) return null;
     return {
+        _id: row.id,
         id: row.id,
         email: row.email,
-        password: row.password,
+        password: row.password_hash,
         name: row.name,
         avatarColor: row.avatar_color,
         createdAt: row.created_at,
@@ -13,12 +14,13 @@ function mapUser(row) {
     };
 }
 
-export async function createUser({ email, passwordHash, name, avatarColor }) {
+export async function createUser({ email, password, passwordHash, name, avatarColor }) {
+    const hash = passwordHash || password;
     const { rows } = await query(
-        `INSERT INTO users (email, password, name, avatar_color)
+        `INSERT INTO users (email, password_hash, name, avatar_color)
      VALUES ($1, $2, $3, $4)
      RETURNING *`,
-        [email.toLowerCase(), passwordHash, name, avatarColor]
+        [email.toLowerCase(), hash, name, avatarColor]
     );
     const user = mapUser(rows[0]);
     delete user.password;
@@ -53,7 +55,7 @@ export async function updateUserProfile(id, { name, avatarColor }) {
 }
 
 export async function updateUserPassword(id, passwordHash) {
-    await query(`UPDATE users SET password = $2 WHERE id = $1`, [id, passwordHash]);
+    await query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [id, passwordHash]);
 }
 
 export async function deleteUser(id) {

@@ -27,8 +27,8 @@ export function mapForm(row) {
         slug: row.slug,
         questions: row.questions || [],
         settings: row.settings || {},
-        views: row.views,
-        responseCount: row.response_count,
+        views: row.views_count,
+        responseCount: row.responses_count,
         isFavorite: row.is_favorite,
         isArchived: row.is_archived,
         publishedAt: row.published_at,
@@ -130,15 +130,15 @@ export async function updateForm(id, updates) {
 }
 
 export async function incrementViews(slug) {
-    await query("UPDATE forms SET views = views + 1 WHERE slug = $1 AND status = 'published'", [slug]);
+    await query("UPDATE forms SET views_count = views_count + 1 WHERE slug = $1 AND status = 'published'", [slug]);
 }
 
 export async function incrementResponseCount(id, delta = 1) {
-    await query('UPDATE forms SET response_count = GREATEST(response_count + $2, 0) WHERE id = $1', [id, delta]);
+    await query('UPDATE forms SET responses_count = GREATEST(responses_count + $2, 0) WHERE id = $1', [id, delta]);
 }
 
 export async function setCounters(id, { views, responseCount }) {
-    await query('UPDATE forms SET views = $2, response_count = $3 WHERE id = $1', [id, views, responseCount]);
+    await query('UPDATE forms SET views_count = $2, responses_count = $3 WHERE id = $1', [id, views, responseCount]);
 }
 
 export async function deleteForm(id) {
