@@ -4,6 +4,7 @@ import * as formRepo from "../repositories/form.repo.js";
 import * as responseRepo from "../repositories/response.repo.js";
 import { OPTION_FIELD_TYPES, STATIC_FIELD_TYPES } from "../utils/constants.js";
 import { Form, FormResponse, Question } from "../types/index.js";
+import { cacheDel } from "../config/redis.js";
 
 export async function submitResponse(
     slug: string,
@@ -42,6 +43,10 @@ export async function submitResponse(
     });
 
     await formRepo.incrementResponseCount(form._id, 1);
+
+    // Invalidate cached analytics & insights for this form/user
+    await cacheDel(`cache:analytics:form:${form._id}`, `cache:insights:user:${form.owner}`);
+
     return response;
 }
 
@@ -113,9 +118,12 @@ export async function deleteResponse(responseId: string, userId: string): Promis
     const response = await responseRepo.findResponseById(responseId);
     if (!response) throw ApiError.notFound("Response not found");
 
-    await getOwnedForm(response.form, userId);
+    const form = await getOwnedForm(response.form, userId);
     await responseRepo.deleteResponse(responseId);
     await formRepo.incrementResponseCount(response.form, -1);
+
+    // Invalidate cached analytics & insights
+    await cacheDel(`cache:analytics:form:${response.form}`, `cache:insights:user:${form.owner}`);
 }
 
 export async function exportResponses(formId: string, userId: string): Promise<{ form: Form; responses: FormResponse[] }> {

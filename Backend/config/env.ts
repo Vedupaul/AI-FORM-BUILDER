@@ -16,6 +16,8 @@ export const env = {
     geminiApiKey: process.env.GEMINI_API_KEY || "",
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
     geminiModel: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    redisUrl: process.env.REDIS_URL?.trim() || "redis://127.0.0.1:6379",
+    REDIS_URL: process.env.REDIS_URL?.trim() || "redis://127.0.0.1:6379",
 };
 
 export default env;

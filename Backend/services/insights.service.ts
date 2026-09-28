@@ -1,7 +1,14 @@
 import * as formRepo from "../repositories/form.repo.js";
 import * as responseRepo from "../repositories/response.repo.js";
+import { cacheGet, cacheSet } from "../config/redis.js";
 
 export async function getInsights(userId: string): Promise<any> {
+    const cacheKey = `cache:insights:user:${userId}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
     const forms = await formRepo.listFormsByOwner(userId, { filter: "all" });
     const formIds = forms.map((f) => f._id);
 
@@ -31,13 +38,18 @@ export async function getInsights(userId: string): Promise<any> {
             color: f.settings?.primaryColor || "#0c8b7c",
         }));
 
-    return {
+    const result = {
         stats: { totalForms: forms.length, published, totalResponses, totalViews, conversion, avgCompletionTime },
         timeline,
         heatmap,
         devices,
         topForms,
     };
+
+    // Cache insights for 2 minutes (120 seconds)
+    await cacheSet(cacheKey, result, 120);
+
+    return result;
 }
 
 export async function getInbox(userId: string, { search = "" }: { search?: string } = {}): Promise<any[]> {

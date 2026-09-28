@@ -2,8 +2,15 @@ import { listResponsesByForm } from "../repositories/response.repo.js";
 import { getOwnedForm } from "./form.service.js";
 import { OPTION_FIELD_TYPES, STATIC_FIELD_TYPES } from "../utils/constants.js";
 import { Form, FormResponse } from "../types/index.js";
+import { cacheGet, cacheSet } from "../config/redis.js";
 
 export async function getFormAnalytics(formId: string, userId: string): Promise<any> {
+    const cacheKey = `cache:analytics:form:${formId}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
     const form = await getOwnedForm(formId, userId);
     const responses = await listResponsesByForm(formId);
 
@@ -21,7 +28,7 @@ export async function getFormAnalytics(formId: string, userId: string): Promise<
         ? Math.round(responses.reduce((sum, r) => sum + (r.completionTime || 0), 0) / totalResponses)
         : 0;
 
-    return {
+    const analytics = {
         stats: {
             totalResponses,
             views,
@@ -32,6 +39,11 @@ export async function getFormAnalytics(formId: string, userId: string): Promise<
         timeline: buildTimeline(responses),
         questions: buildQuestionAnalytics(form, responses),
     };
+
+    // Cache analytics for 2 minutes (120 seconds)
+    await cacheSet(cacheKey, analytics, 120);
+
+    return analytics;
 }
 
 function computeCompletionRate(responses: FormResponse[], answerableCount: number): number {
