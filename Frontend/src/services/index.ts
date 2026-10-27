@@ -96,7 +96,8 @@ export const authApi = {
   me: () => net(() => mock.me()),
   updateProfile: (payload) => net(() => mock.updateProfile(payload)),
   changePassword: () => net(() => ({ success: true, message: "Password changed" })),
-  deleteAccount: () => net(() => ({ success: true, message: "Account deleted" })),
+  deleteAccount: () => net(() => mock.deleteAccount()),
+  resetWorkspace: () => net(() => mock.resetWorkspace()),
 };
 
 // ---- Workspace-wide ----

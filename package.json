@@ -4,6 +4,13 @@
   "scripts": {
     "dev": "npm run dev --prefix Frontend",
     "build": "npm run build --prefix Frontend",
-    "preview": "npm run preview --prefix Frontend"
+    "preview": "npm run preview --prefix Frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "npm run test --prefix Backend",
+    "test:frontend": "npm run test --prefix Frontend",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }

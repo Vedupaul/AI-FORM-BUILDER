@@ -4,9 +4,7 @@ import { protect } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(protect);
-
-router.get("/insights", getInsights);
-router.get("/inbox", getInbox);
+router.get("/insights", protect, getInsights);
+router.get("/inbox", protect, getInbox);
 
 export default router;

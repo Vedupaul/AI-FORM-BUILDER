@@ -50,7 +50,7 @@ export async function submitResponse(
     return response;
 }
 
-function validateAnswer(q: Question, value: any): void {
+export function validateAnswer(q: Question, value: any): void {
     const v = q.validation || {};
     const asString = Array.isArray(value) ? value.join(",") : String(value);
 

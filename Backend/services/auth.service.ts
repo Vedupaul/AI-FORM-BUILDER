@@ -12,7 +12,7 @@ import { PublicUser, User } from "../types/index.js";
 
 const AVATAR_COLORS = ["#4f46e5", "#2563eb", "#7c3aed", "#d97706", "#ea580c", "#059669"];
 
-function pickAvatarColor(seed: string): string {
+export function pickAvatarColor(seed: string): string {
     const sum = [...seed].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
     return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }

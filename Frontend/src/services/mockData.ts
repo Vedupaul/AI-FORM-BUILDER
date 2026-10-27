@@ -262,7 +262,14 @@ function makeResponse(form, dayOffset) {
   };
 }
 
-const STORAGE_KEY = "timely_forms_mock_store_v1";
+const STORAGE_KEY = "timely_forms_store_v2";
+
+// Clean up legacy v1 mock store that contained pre-seeded demo forms
+if (typeof window !== "undefined" && window.localStorage) {
+  try {
+    localStorage.removeItem("timely_forms_mock_store_v1");
+  } catch (_) {}
+}
 
 const store = {
   user: {
@@ -270,7 +277,7 @@ const store = {
     name: "Alex Carter",
     email: "alex@timetoprogram.dev",
     avatarColor: "#0c8b7c",
-    createdAt: daysAgoDate(60),
+    createdAt: new Date().toISOString(),
   },
   forms: [],
   responses: [],
@@ -310,17 +317,9 @@ function syncStore() {
   if (syncStore()) {
     return;
   }
-  for (const def of FORM_DEFS) {
-    const form = makeForm(def);
-    const n = def.responses || 0;
-    for (let i = 0; i < n; i++) {
-      const dayOffset = Math.floor(Math.pow(Math.random(), 1.7) * SPREAD_DAYS);
-      store.responses.push(makeResponse(form, dayOffset));
-    }
-    form.responseCount = n;
-    form.views = n ? Math.round(n / (def.conversion || 0.5)) + rand(0, 25) : rand(0, 12);
-    store.forms.push(form);
-  }
+  // Brand new workspace starts completely from scratch with 0 forms
+  store.forms = [];
+  store.responses = [];
   saveStore();
 })();
 
@@ -482,16 +481,48 @@ export const mock = {
     syncStore();
     return clone(store.user);
   },
-  login: () => {
+  login: (payload?: any) => {
     syncStore();
+    if (payload?.email && payload.email !== store.user.email) {
+      store.user.email = payload.email;
+      saveStore();
+    }
     return { user: clone(store.user), token: `mock.${uid("tok")}` };
   },
   register: (payload) => {
-    syncStore();
-    if (payload?.name) store.user.name = payload.name;
-    if (payload?.email) store.user.email = payload.email;
+    store.user = {
+      id: uid("usr"),
+      name: payload?.name?.trim() || "New User",
+      email: payload?.email?.trim() || "user@example.com",
+      avatarColor: payload?.avatarColor || "#0c8b7c",
+      createdAt: new Date().toISOString(),
+    };
+    // Brand new account starts completely from scratch
+    store.forms = [];
+    store.responses = [];
     saveStore();
     return { user: clone(store.user), token: `mock.${uid("tok")}` };
+  },
+  resetWorkspace: () => {
+    store.forms = [];
+    store.responses = [];
+    saveStore();
+    return { success: true, message: "Workspace reset" };
+  },
+  deleteAccount: () => {
+    store.user = {
+      id: "u_demo",
+      name: "Alex Carter",
+      email: "alex@timetoprogram.dev",
+      avatarColor: "#0c8b7c",
+      createdAt: new Date().toISOString(),
+    };
+    store.forms = [];
+    store.responses = [];
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    return { success: true, message: "Account deleted" };
   },
   me: () => {
     syncStore();

@@ -26,6 +26,24 @@ export default function Settings() {
   const [savingPwd, setSavingPwd] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const resetWorkspace = async () => {
+    setResetting(true);
+    try {
+      if (typeof authApi.resetWorkspace === "function") {
+        await authApi.resetWorkspace();
+      }
+      toast.success("Workspace reset! All forms cleared.");
+      setConfirmReset(false);
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset workspace");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const saveProfile = async () => {
     setSavingProfile(true);
@@ -147,13 +165,26 @@ export default function Settings() {
               </p>
             </div>
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+            <Button variant="outline" onClick={() => setConfirmReset(true)} loading={resetting}>
+              Start from scratch (Clear all forms)
+            </Button>
             <Button variant="danger" onClick={() => setConfirmDelete(true)}>
               Delete my account
             </Button>
           </div>
         </Card>
       </div>
+
+      <ConfirmModal
+        open={confirmReset}
+        onClose={() => setConfirmReset(false)}
+        onConfirm={resetWorkspace}
+        title="Start from scratch?"
+        description="All default demo forms and responses will be permanently cleared from this workspace so you can start fresh."
+        confirmText="Clear all & start fresh"
+        danger
+      />
 
       <ConfirmModal
         open={confirmDelete}
